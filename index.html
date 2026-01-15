@@ -1,0 +1,1055 @@
+<!doctype html>
+<html lang="en" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wendi - Sustainable Shopping Buddy</title>
+  <link rel="manifest" href="manifest.json">
+  <!-- iOS meta -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Wendi">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="images/favicon-180.png">
+  <link rel="icon" type="image/x-icon" href="images/favicon-180.png">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&amp;family=Nunito:wght@300;400;500;600&amp;display=swap" rel="stylesheet">
+  <style>
+    body {
+      box-sizing: border-box;
+      color: var(--text-color);
+    }
+    * {
+      font-family: 'Nunito', sans-serif;
+      color: var(--text-color);
+      
+    }
+    .title-font {
+      font-family: 'Cormorant Garamond', serif;
+      color: var(--text-color);
+    }
+    .swipe-card {
+      touch-action: pan-y;
+      user-select: none;
+      transition: transform 0.1s ease-out;
+    }
+    .swipe-card.swiping {
+      transition: none;
+    }
+    .swipe-hint {
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .screen {
+      opacity: 0;
+      transform: translateX(20px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      pointer-events: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .screen.active {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: auto;
+    }
+    .nav-btn {
+      transition: all 0.2s ease;
+    }
+    .nav-btn.active {
+      transform: scale(1.05);
+    }
+    .closet-item {
+      animation: fadeIn 0.3s ease forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+    }
+    .start-btn:hover {
+      animation: pulse 1.5s ease infinite;
+    }
+    .filter-chip {
+      transition: all 0.2s ease;
+    }
+    .filter-chip.selected {
+      transform: scale(1.05);
+    }
+    #friends-screen {
+        touch-action: pan-y;
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full bg-stone-100 overflow-hidden">
+  <div id="app-container" class="relative w-full h-full max-w-md mx-auto bg-gradient-to-b from-amber-50 to-[var(--background-color)] shadow-2xl overflow-hidden"><!-- Screen 1: Home / Decision Flow -->
+   <div id="home-screen" class="screen active flex flex-col h-full"><!-- Header -->
+    <header class="pt-8 pb-4 px-6 text-center">
+     <img src="images/wendi-logo.png" alt="Logo" class="h-16 mx-auto">
+     <p id="tagline" class="text-stone-500 text-sm mt-1 tracking-wider">Sustainable shopping buddy</p>
+    </header><!-- Main Content Area -->
+    <div class="flex-1 flex flex-col items-center justify-center px-6 relative overflow-hidden text-[var(--text-color)]"><!-- Start View -->
+     <div id="start-view" class="flex flex-col items-center text-[var(--text-color)]">
+      <div class="w-32 h-32 mb-8 rounded-full bg-gradient-to-br from-amber-100 to-stone-200 flex items-center justify-center shadow-inner">
+       <svg class="w-16 h-16 text-stone-600" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+       </svg>
+      </div>
+      <p class="text-stone-500 text-center mb-4 max-w-xs leading-relaxed">
+        <strong class="font-semibold text-stone-600">Before you buy, pause with Wendi</strong><br>
+        <span class="text-sm text-stone-500">
+          Answer a few questions and explore more mindful choices, rediscover your closet and borrow from your community.
+        </span>      
+      </p>
+      <button id="start-btn" class="start-btn bg-stone-800 text-white px-12 py-4 rounded-full text-lg font-medium shadow-lg hover:bg-stone-700 transition-all duration-300"> Start </button>
+     </div><!-- Question View -->
+     <div id="question-view" class="hidden absolute inset-0 flex flex-col items-center justify-center px-6 py-8 overflow-hidden"><!-- Swipe hints -->
+      <div class="absolute top-8 left-0 right-0 flex justify-between px-8 pointer-events-none z-10">
+       <div id="no-hint" class="swipe-hint flex items-center text-rose-500 font-medium">
+        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg> No
+       </div>
+       <div id="yes-hint" class="swipe-hint flex items-center text-emerald-600 font-medium">
+        Yes 
+        <svg class="w-5 h-5 ml-1" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+       </div>
+      </div><!-- Question Card -->
+      <div id="question-card" class="swipe-card w-full max-w-sm bg-white rounded-3xl shadow-xl p-6 cursor-grab active:cursor-grabbing my-auto">
+       <div class="text-center">
+        <div id="question-icon" class="w-16 h-16 mx-auto mb-4 rounded-full bg-amber-100 flex items-center justify-center"><span class="text-3xl">🤔</span>
+        </div>
+        <p id="question-text" class="text-lg text-[var(--text-color)] leading-relaxed font-medium"></p>
+       </div>
+       <div class="mt-6 flex justify-center space-x-4 text-xs text-stone-400"><span>← Swipe left for No</span> <span>•</span> <span>Swipe right for Yes →</span>
+       </div>
+      </div><!-- Progress dots -->
+      <div id="progress-dots" class="flex space-x-2 mt-6 mb-4"></div>
+     </div><!-- Result View -->
+     <div id="result-view" class="hidden absolute inset-0 flex flex-col items-center justify-center px-6 py-8 overflow-y-auto">
+      <div id="result-card" class="w-full max-w-sm bg-white rounded-3xl shadow-xl p-6 text-center my-auto">
+       <div id="result-icon" class="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"><span class="text-3xl"></span>
+       </div>
+       <h2 id="result-title" class="text-xl font-semibold text-[var(--text-color)] mb-3"></h2>
+       <p id="result-message" class="text-stone-600 leading-relaxed text-sm"></p>
+      </div>
+     </div>
+    </div><!-- Start Over Button -->
+    <div id="start-over-container" class="hidden py-4 text-center"><button id="start-over-btn" class="text-stone-500 hover:text-stone-700 transition-colors text-sm font-medium underline underline-offset-4"> Start Over </button>
+    </div><!-- Bottom Navigation -->
+    <nav class="bg-white/80 backdrop-blur-sm border-t border-stone-200 px-6 py-4">
+     <div class="flex justify-between items-center max-w-xs mx-auto"><button class="nav-btn flex flex-col items-center text-stone-400 hover:text-stone-600 transition-colors relative" data-screen="closet">
+       <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+       </svg><span class="text-xs font-medium">My Closet</span> </button> <button class="nav-btn flex flex-col items-center text-amber-600" data-screen="home">
+       <svg class="w-6 h-6 mb-1" fill="currentColor" viewbox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+       </svg><span class="text-xs font-medium">Home</span> </button> <button class="nav-btn flex flex-col items-center text-stone-400 hover:text-stone-600 transition-colors relative" data-screen="friends">
+       <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+       </svg><span class="text-xs font-medium">Friends</span> </button>
+     </div>
+    </nav>
+   </div><!-- Screen 2: My Closet -->
+   <div id="closet-screen" class="screen flex flex-col h-full"><!-- Header -->
+    <header class="pt-8 pb-4 px-6">
+     <h1 class="title-font text-3xl font-semibold text-[var(--text-color)] text-center">My Closet</h1>
+     <p class="text-stone-500 text-sm mt-1 text-center">Your sustainable wardrobe</p>
+    </header><!-- Filters -->
+    <div class="px-4 pb-4">
+     <div class="flex space-x-2 overflow-x-auto pb-2 scrollbar-hide"><select id="filter-category" class="filter-chip bg-white border border-stone-200 rounded-full px-4 py-2 text-sm text-stone-600 focus:outline-none focus:ring-2 focus:ring-amber-300"> <option value="">All Categories</option> <option value="tops">Tops</option> <option value="bottoms">Bottoms</option> <option value="dresses">Dresses</option> <option value="outerwear">Outerwear</option> <option value="accessories">Accessories</option> </select> <select id="filter-color" class="filter-chip bg-white border border-stone-200 rounded-full px-4 py-2 text-sm text-stone-600 focus:outline-none focus:ring-2 focus:ring-amber-300"> <option value="">All Colors</option> <option value="black">Black</option> <option value="white">White</option> <option value="blue">Blue</option> <option value="green">Green</option> <option value="red">Red</option> <option value="brown">Brown</option> <option value="beige">Beige</option> </select> <select id="filter-size" class="filter-chip bg-white border border-stone-200 rounded-full px-4 py-2 text-sm text-stone-600 focus:outline-none focus:ring-2 focus:ring-amber-300"> <option value="">All Sizes</option> <option value="xs">XS</option> <option value="s">S</option> <option value="m">M</option> <option value="l">L</option> <option value="xl">XL</option> </select>
+     </div>
+    </div><!-- Upload Button -->
+    <div class="px-6 pb-4"><button id="upload-btn" class="w-full bg-gradient-to-r from-amber-100 to-stone-100 border-2 border-dashed border-stone-300 rounded-2xl py-4 flex items-center justify-center space-x-2 hover:border-amber-400 transition-colors">
+      <svg class="w-6 h-6 text-stone-500" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+      </svg><span class="text-stone-600 font-medium">Add Item to Closet</span> </button>
+    </div><!-- Closet Grid -->
+    <div class="flex-1 overflow-y-auto px-4 pb-4">
+     <div id="closet-grid" class="grid grid-cols-2 gap-3"><!-- Items will be dynamically added -->
+     </div>
+     <div id="empty-closet" class="hidden flex flex-col items-center justify-center py-12 text-center">
+      <div class="w-20 h-20 rounded-full bg-stone-100 flex items-center justify-center mb-4"><span class="text-4xl">👗</span>
+      </div>
+      <p class="text-stone-500">Your closet is empty</p>
+      <p class="text-stone-400 text-sm mt-1">Add items to start building your sustainable wardrobe</p>
+     </div>
+    </div><!-- Bottom Navigation -->
+    <nav class="bg-white/80 backdrop-blur-sm border-t border-stone-200 px-6 py-4">
+     <div class="flex justify-between items-center max-w-xs mx-auto"><button class="nav-btn flex flex-col items-center text-amber-600" data-screen="closet">
+       <svg class="w-6 h-6 mb-1" fill="currentColor" viewbox="0 0 24 24"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+       </svg><span class="text-xs font-medium">My Closet</span> </button> <button class="nav-btn flex flex-col items-center text-stone-400 hover:text-stone-600 transition-colors relative" data-screen="home">
+       <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+       </svg><span class="text-xs font-medium">Home</span> </button> <button class="nav-btn flex flex-col items-center text-stone-400 hover:text-stone-600 transition-colors relative" data-screen="friends">
+       <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+       </svg><span class="text-xs font-medium">Friends</span> </button>
+     </div>
+    </nav>
+   </div><!-- Screen 3: Friends -->
+   <div id="friends-screen" class="screen flex flex-col h-full"><!-- Header -->
+    <header class="pt-8 pb-4 px-6">
+     <h1 class="title-font text-3xl font-semibold text-[var(--text-color)] text-center">Friends</h1>
+     <p class="text-stone-500 text-sm mt-1 text-center">Borrow from your community</p>
+    </header><!-- Search & Add Friends -->
+    <div class="px-6 pb-4"><button id="search-friends-btn" class="w-full bg-white border border-stone-200 rounded-2xl py-3 px-4 flex items-center space-x-3 hover:border-amber-400 transition-colors shadow-sm">
+      <svg class="w-5 h-5 text-stone-400" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg><span class="text-stone-500">Search &amp; Add Friends</span> </button>
+    </div><!-- Friend Search Modal (hidden by default) -->
+    <div id="friend-search-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-end">
+     <div class="bg-white w-full max-w-md mx-auto rounded-t-3xl p-6 animate-slide-up">
+      <div class="flex justify-between items-center mb-4">
+       <h3 class="text-lg font-semibold text-stone-800">Find Friends</h3><button id="close-friend-modal" class="text-stone-400 hover:text-stone-600">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg></button>
+      </div><input type="text" id="friend-search-input" placeholder="Search by name or username" class="w-full bg-stone-100 rounded-xl px-4 py-3 text-stone-700 focus:outline-none focus:ring-2 focus:ring-amber-300 mb-4">
+      <div id="friend-search-results" class="space-y-2 max-h-64 overflow-y-auto"><!-- Search results will appear here -->
+      </div>
+     </div>
+    </div><!-- Filters -->
+    <div class="px-4 pb-4">
+     <div class="flex space-x-2 overflow-x-auto pb-2 scrollbar-hide"><select id="friend-filter-category" class="filter-chip bg-white border border-stone-200 rounded-full px-4 py-2 text-sm text-stone-600 focus:outline-none focus:ring-2 focus:ring-amber-300"> <option value="">All Categories</option> <option value="tops">Tops</option> <option value="bottoms">Bottoms</option> <option value="dresses">Dresses</option> <option value="outerwear">Outerwear</option> <option value="accessories">Accessories</option> </select> <select id="friend-filter-color" class="filter-chip bg-white border border-stone-200 rounded-full px-4 py-2 text-sm text-stone-600 focus:outline-none focus:ring-2 focus:ring-amber-300"> <option value="">All Colors</option> <option value="black">Black</option> <option value="white">White</option> <option value="blue">Blue</option> <option value="green">Green</option> <option value="red">Red</option> <option value="brown">Brown</option> <option value="beige">Beige</option> </select> <select id="friend-filter-size" class="filter-chip bg-white border border-stone-200 rounded-full px-4 py-2 text-sm text-stone-600 focus:outline-none focus:ring-2 focus:ring-amber-300"> <option value="">All Sizes</option> <option value="xs">XS</option> <option value="s">S</option> <option value="m">M</option> <option value="l">L</option> <option value="xl">XL</option> </select>
+     </div>
+    </div><!-- Connected Friends -->
+    <div class="px-6 pb-3">
+        <p id="friends-count" class="text-sm text-stone-500 text-center">
+            Friends (0)
+        </p>
+        </div>
+<!-- Friends Items Grid -->
+    <div class="flex-1 overflow-y-auto px-4 pb-4">
+     <div id="friends-grid" class="grid grid-cols-2 gap-3"><!-- Items will be dynamically added -->
+     </div>
+     <div id="empty-friends" class="hidden flex flex-col items-center justify-center py-12 text-center">
+      <div class="w-20 h-20 rounded-full bg-stone-100 flex items-center justify-center mb-4"><span class="text-4xl">👋</span>
+      </div>
+      <p class="text-stone-500">No friends connected yet</p>
+      <p class="text-stone-400 text-sm mt-1">Add friends to browse their sustainable wardrobes</p>
+     </div>
+    </div><!-- Bottom Navigation -->
+    <nav class="bg-white/80 backdrop-blur-sm border-t border-stone-200 px-6 py-4">
+     <div class="flex justify-between items-center max-w-xs mx-auto"><button class="nav-btn flex flex-col items-center text-stone-400 hover:text-stone-600 transition-colors relative" data-screen="closet">
+       <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+       </svg><span class="text-xs font-medium">My Closet</span> </button> <button class="nav-btn flex flex-col items-center text-stone-400 hover:text-stone-600 transition-colors relative" data-screen="home">
+       <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+       </svg><span class="text-xs font-medium">Home</span> </button> <button class="nav-btn flex flex-col items-center text-amber-600" data-screen="friends">
+       <svg class="w-6 h-6 mb-1" fill="currentColor" viewbox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+       </svg><span class="text-xs font-medium">Friends</span> </button>
+     </div>
+    </nav>
+   </div><!-- Add Item Modal -->
+   <div id="add-item-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-end">
+    <div class="bg-white w-full max-w-md mx-auto rounded-t-3xl p-6">
+     <div class="flex justify-between items-center mb-4">
+      <h3 class="text-lg font-semibold text-stone-800">Add to Closet</h3><button id="close-add-modal" class="text-stone-400 hover:text-stone-600">
+       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+       </svg></button>
+     </div><!-- Photo Upload Area --> <input type="file" id="photo-input" accept="image/*" class="hidden">
+     <div id="photo-upload-area" class="border-2 border-dashed border-stone-300 rounded-2xl p-8 mb-4 text-center cursor-pointer hover:border-amber-400 transition-colors">
+      <div id="upload-placeholder">
+       <svg class="w-12 h-12 mx-auto text-stone-400 mb-2" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+       </svg>
+       <p class="text-stone-500">Tap to upload photo</p>
+      </div>
+      <div id="photo-preview" class="hidden"><img id="preview-image" class="w-full h-48 object-cover rounded-xl" alt="Item preview">
+      </div>
+     </div><!-- Item Details -->
+     <div class="space-y-3"><select id="item-category" class="w-full bg-stone-100 rounded-xl px-4 py-3 text-stone-700 focus:outline-none focus:ring-2 focus:ring-amber-300"> <option value="">Select Category</option> <option value="tops">Tops</option> <option value="bottoms">Bottoms</option> <option value="dresses">Dresses</option> <option value="outerwear">Outerwear</option> <option value="accessories">Accessories</option> </select> <select id="item-color" class="w-full bg-stone-100 rounded-xl px-4 py-3 text-stone-700 focus:outline-none focus:ring-2 focus:ring-amber-300"> <option value="">Select Color</option> <option value="black">Black</option> <option value="white">White</option> <option value="blue">Blue</option> <option value="green">Green</option> <option value="red">Red</option> <option value="brown">Brown</option> <option value="beige">Beige</option> </select> <select id="item-size" class="w-full bg-stone-100 rounded-xl px-4 py-3 text-stone-700 focus:outline-none focus:ring-2 focus:ring-amber-300"> <option value="">Select Size</option> <option value="xs">XS</option> <option value="s">S</option> <option value="m">M</option> <option value="l">L</option> <option value="xl">XL</option> </select>
+     </div><button id="save-item-btn" class="w-full bg-stone-800 text-white rounded-full py-3 mt-6 font-medium hover:bg-stone-700 transition-colors"> Add to Closet </button>
+    </div>
+   </div>
+  </div>
+  <script>
+    // Default configuration
+    const defaultConfig = {
+      app_title: 'Wendi',
+      tagline: 'Sustainable shopping buddy',
+      start_button_text: 'Start',
+      background_color: '#f0e2da',
+      surface_color: '#ffffff',
+      text_color: '#40301f',
+      primary_action_color: '#292524',
+      secondary_action_color: '#d97706'
+    };
+
+    // Set CSS variables on the root (entire document)
+    const root = document.documentElement;
+    root.style.setProperty('--background-color', defaultConfig.background_color);
+    root.style.setProperty('--surface-color', defaultConfig.surface_color);
+    root.style.setProperty('--text-color', defaultConfig.text_color);
+    root.style.setProperty('--primary-action-color', defaultConfig.primary_action_color);
+    root.style.setProperty('--secondary-action-color', defaultConfig.secondary_action_color);
+
+    // App State
+    let currentScreen = 'home';
+    let decisionState = {
+      currentQuestion: 0,
+      answers: [],
+      isActive: false
+    };
+    
+    // Sample closet data
+    let myCloset = [];
+    
+    // Sample friends data
+    let friends = [
+        { id: 1, name: 'Anouk', items: [] },
+        { id: 2, name: 'Iris', items: [] },
+        { id: 3, name: 'Roma', items: [] },
+        { id: 4, name: 'Sofie', items: [] },
+        { id: 5, name: 'Carolina', items: [] },
+        { id: 6, name: 'Mark', items: [] }
+    ];
+    
+    // Updated Decision tree questions based on new logic
+    const questions = [
+      { text: "Do you already own something similar?", icon: "🧐", yesPath: 1, noPath: 4 },
+      { text: "Do you need this item?", icon: "🤔", yesPath: 2, noPath: 'outcome-a' },
+      { text: "Will this item replace an existing item in your wardrobe?", icon: "🔄", yesPath: 3, noPath: 'outcome-b' },
+      { text: "Will you wear this item more than one time?", icon: "👗", yesPath: 5, noPath: 8 },
+      { text: "Do you need this item?", icon: "🤔", yesPath: 3, noPath: 'outcome-c' },
+      { text: "Is this a timeless and sustainable choice for you?", icon: "🌿", yesPath: 6, noPath: 'outcome-d' },
+      { text: "Will you wear this item more than 30 times?", icon: "📊", yesPath: 7, noPath: 9 },
+      { text: "Can you acquire this item sustainably? (vintage, second-hand, or rental)", icon: "♻️", yesPath: 'outcome-f', noPath: 'outcome-g' },
+      { text: "Can you rent or borrow this item?", icon: "🤝", yesPath: 'outcome-h', noPath: 'outcome-i' },
+      { text: "Can you acquire this item sustainably? (vintage, second-hand, or rental)", icon: "🛍️", yesPath: 'outcome-e', noPath: 'outcome-j' }
+    ];
+    
+    // Updated results based on new outcomes
+    const results = {
+      'outcome-a': {
+        icon: '👀',
+        title: 'Check Your Friends!',
+        message: "You already have something similar in your closet. If you're still in the mood for something new, check the closets of your friends.",
+        showFriendsButton: true,
+        color: 'bg-amber-100'
+      },
+      'outcome-b': {
+        icon: '🎉',
+        title: 'Great Decision!',
+        message: "Congratulations, you just saved money, space, and the planet. Feeling like a change anyway? Check the closets of your friends.",
+        showFriendsButton: true,
+        color: 'bg-emerald-100'
+      },
+      'outcome-c': {
+        icon: '🌟',
+        title: 'Conscious Choice!',
+        message: "Congratulations, you made the conscious decision that buying this item is not needed. If you're still in the mood for something, check the closets of your friends.",
+        showFriendsButton: true,
+        color: 'bg-teal-100'
+      },
+      'outcome-d': {
+        icon: '💭',
+        title: 'Well Noticed!',
+        message: "Well done, you noticed this item wouldn't be a long-term favorite. If you're still in the mood to browse, check your friends' closets.",
+        showFriendsButton: true,
+        color: 'bg-purple-100'
+      },
+      'outcome-e': {
+        icon: '📊',
+        title: 'Mindful Wear',
+        message: "Even though you won't wear this as often as sustainably advised, you can still appreciate its value. Try to wear it at least 10 times to combat fast fashion.",
+        color: 'bg-orange-100'
+      },
+      'outcome-f': {
+        icon: '♻️',
+        title: 'Sustainable Choice!',
+        message: "You can acquire this item in a sustainable manner. Great job choosing vintage, second-hand, or rental options!",
+        color: 'bg-green-100'
+      },
+      'outcome-g': {
+        icon: '🌍',
+        title: 'Consider Alternatives',
+        message: "Consider avoiding buying new fast-fashion items. Look for alternative sustainable options like vintage, second-hand, or rental. However, you will sustainably use this item even when bought new.",
+        color: 'bg-rose-100'
+      },
+      'outcome-h': {
+        icon: '🤝',
+        title: 'Borrow or Rent!',
+        message: "You can borrow or rent this item sustainably. This is a fantastic way to enjoy fashion while minimizing environmental impact!",
+        color: 'bg-teal-100'
+      },
+      'outcome-i': {
+        icon: '❌',
+        title: 'Error: Sustainability not found!',
+        message: "You cannot acquire this item sustainably. Still in the mood for something else, check the closet of your friends.",
+        showFriendsButton: true,
+        color: 'bg-purple-100'
+      },
+      'outcome-j': {
+        icon: '📊',
+        title: 'Mindful Wear',
+        message: "Although you may not wear this item often or acquire it sustainably, aim to wear it at least 20 times to help counter fast fashion.",
+        color: 'bg-orange-100'
+      },
+    };
+    
+    // Sample items for friends' closets
+    const sampleItems = [
+      { image: "https://images.unsplash.com/photo-1718252540511-e958742e4165", category: "bottoms", color: "black", size: "M" },
+      { image: "https://images.unsplash.com/photo-1607160199580-1b0c9b736b66", category: "top", color: "brown", size: "S" },
+      { image: "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633", category: "tops", color: "white", size: "M" },
+      { image: "https://images.unsplash.com/photo-1714143136385-c449be6760f6", category: "bottoms", color: "blue", size: "L" }
+    ];
+
+
+// Available sizes
+const sizes = ["XS", "S", "M", "L", "XL"];
+
+/* ---------------------------
+INITIALIZE FRIEND ITEMS (unique & random size)
+---------------------------- */
+friends.forEach(friend => {
+  const availableItems = [...sampleItems]; // copy to avoid modifying original
+  const count = Math.floor(Math.random() * 3) + 1;
+
+  for (let i = 0; i < count && availableItems.length > 0; i++) {
+    // pick a random item
+    const randomIndex = Math.floor(Math.random() * availableItems.length);
+    const item = availableItems.splice(randomIndex, 1)[0]; // remove from availableItems
+
+    // assign a random size
+    const randomSize = sizes[Math.floor(Math.random() * sizes.length)];
+
+    friend.items.push({
+      ...item,
+      size: randomSize,
+      owner: friend.name,
+      ownerId: friend.id
+    });
+  }
+});
+
+    
+    // Category emoji map
+    const categoryEmojis = {
+      tops: '👕',
+      bottoms: '👖',
+      dresses: '👗',
+      outerwear: '🧥',
+      accessories: '🧣'
+    };
+    
+    // DOM Elements
+    const screens = {
+      home: document.getElementById('home-screen'),
+      closet: document.getElementById('closet-screen'),
+      friends: document.getElementById('friends-screen')
+    };
+    
+    const startView = document.getElementById('start-view');
+    const questionView = document.getElementById('question-view');
+    const resultView = document.getElementById('result-view');
+    const startOverContainer = document.getElementById('start-over-container');
+    const questionCard = document.getElementById('question-card');
+    const questionText = document.getElementById('question-text');
+    const questionIcon = document.getElementById('question-icon');
+    const progressDots = document.getElementById('progress-dots');
+    const yesHint = document.getElementById('yes-hint');
+    const noHint = document.getElementById('no-hint');
+    
+    // Navigation
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetScreen = btn.dataset.screen;
+        navigateTo(targetScreen);
+      });
+    });
+    
+    function navigateTo(screenName) {
+      // Update screens
+      Object.keys(screens).forEach(key => {
+        screens[key].classList.remove('active');
+      });
+      screens[screenName].classList.add('active');
+      
+      // Update nav buttons across all screens
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        const isActive = btn.dataset.screen === screenName;
+        btn.classList.toggle('text-amber-600', isActive);
+        btn.classList.toggle('text-stone-400', !isActive);
+        
+        // Update icon fill
+        const svg = btn.querySelector('svg');
+        if (isActive) {
+          svg.setAttribute('fill', 'currentColor');
+        } else {
+          svg.setAttribute('fill', 'none');
+        }
+      });
+      
+      currentScreen = screenName;
+      
+      // Render content for target screen
+      if (screenName === 'closet') {
+        renderCloset();
+      } else if (screenName === 'friends') {
+        renderFriends();
+      }
+    }
+    
+    // Start Decision Flow
+    document.getElementById('start-btn').addEventListener('click', startDecisionFlow);
+    document.getElementById('start-over-btn').addEventListener('click', resetDecisionFlow);
+    
+    function startDecisionFlow() {
+      decisionState = { currentQuestion: 0, answers: [], isActive: true };
+      startView.classList.add('hidden');
+      questionView.classList.remove('hidden');
+      resultView.classList.add('hidden');
+      startOverContainer.classList.remove('hidden');
+      showQuestion(0);
+    }
+    
+    function resetDecisionFlow() {
+      decisionState = { currentQuestion: 0, answers: [], isActive: false };
+      startView.classList.remove('hidden');
+      questionView.classList.add('hidden');
+      resultView.classList.add('hidden');
+      startOverContainer.classList.add('hidden');
+      
+      // Clear any added "Go to" elements
+      const resultCard = document.getElementById('result-card');
+      const goToElements = resultCard.querySelectorAll('p.text-stone-600.mt-4');
+      goToElements.forEach(el => el.remove());
+    }
+    
+    function showQuestion(index) {
+      const question = questions[index];
+      questionText.textContent = question.text;
+      questionIcon.querySelector('span').textContent = question.icon;
+
+      // Remove any existing guidance
+      const existingGuidance = document.getElementById('question-guidance');
+      if (existingGuidance) existingGuidance.remove();
+
+      // Add guidance for specific question (index 5)
+      if (index === 5) {
+        const guidance = document.createElement('p');
+        guidance.id = 'question-guidance';
+        guidance.className = 'text-stone-500 text-sm mt-2 text-center max-w-xs';
+        guidance.textContent = "You can check if a material is more sustainable by looking at: Material & sourcing, production quality, care requirements, certifications and long-term wearability.";
+        questionText.parentElement.appendChild(guidance);
+      }
+
+      if (index === 8) {
+        const guidance = document.createElement('p');
+        guidance.id = 'question-guidance';
+        guidance.className = 'text-stone-500 text-sm mt-2 text-center max-w-xs';
+        guidance.innerHTML = `Look in the closet of your friends or on websites to rent clothes such as
+        <a href="https://lena-library.com/" target="_blank" class="text-amber-600 underline">Lena Library</a>, 
+        <a href="https://www.rentglam.nl/" target="_blank" class="text-amber-600 underline">Rentglam</a> and 
+        <a href="https://www.wauwcloset.nl/" target="_blank" class="text-amber-600 underline">Wauwcloset</a>. 
+        For more clothing libraries, <a href="https://www.thegreenlist.nl/en/the-best-clothing-libraries-in-the-netherlands/" target="_blank" class="text-amber-600 underline">click here</a>.`;
+        questionText.parentElement.appendChild(guidance);
+      }
+
+
+      if (index === 7) {
+        const guidance = document.createElement('p');
+        guidance.id = 'question-guidance';
+        guidance.className = 'text-stone-500 text-sm mt-2 text-center max-w-xs';
+        guidance.innerHTML = `For vintage and second-hand clothes look at places such as local vintage shops like 
+        <a href="https://www.kilokilovintage.nl/" target="_blank" class="text-amber-600 underline">Kilo kilo</a>,
+        <a href="https://www.vinted.com/" target="_blank" class="text-amber-600 underline">Vinted</a> or
+        <a href="https://www.marktplaats.nl/" target="_blank" class="text-amber-600 underline">Marktplaats</a>. For renting clothes please look at places such as 
+        <a href="https://lena-library.com/" target="_blank" class="text-amber-600 underline">Lena Library</a>, 
+        <a href="https://www.rentglam.nl/" target="_blank" class="text-amber-600 underline">Rentglam</a> and 
+        <a href="https://www.wauwcloset.nl/" target="_blank" class="text-amber-600 underline">Wauwcloset</a>. 
+        For more clothing libraries, <a href="https://www.thegreenlist.nl/en/the-best-clothing-libraries-in-the-netherlands/" target="_blank" class="text-amber-600 underline">click here</a>.`;
+        questionText.parentElement.appendChild(guidance);
+      }
+
+      if (index === 9) {
+        const guidance = document.createElement('p');
+        guidance.id = 'question-guidance';
+        guidance.className = 'text-stone-500 text-sm mt-2 text-center max-w-xs';
+        guidance.innerHTML = `For vintage and second-hand clothes look at places such as local vintage shops like 
+        <a href="https://www.kilokilovintage.nl/" target="_blank" class="text-amber-600 underline">Kilo kilo</a>,
+        <a href="https://www.vinted.com/" target="_blank" class="text-amber-600 underline">Vinted</a> or
+        <a href="https://www.marktplaats.nl/" target="_blank" class="text-amber-600 underline">Marktplaats</a>. For renting clothes please look at places such as 
+        <a href="https://lena-library.com/" target="_blank" class="text-amber-600 underline">Lena Library</a>, 
+        <a href="https://www.rentglam.nl/" target="_blank" class="text-amber-600 underline">Rentglam</a> and 
+        <a href="https://www.wauwcloset.nl/" target="_blank" class="text-amber-600 underline">Wauwcloset</a>. 
+        For more clothing libraries, <a href="https://www.thegreenlist.nl/en/the-best-clothing-libraries-in-the-netherlands/" target="_blank" class="text-amber-600 underline">click here</a>.`;
+        questionText.parentElement.appendChild(guidance);
+      }
+
+
+      if (index === 0) {
+        const guidance = document.createElement('p');
+        guidance.id = 'question-guidance';
+        guidance.className = 'text-stone-500 text-sm mt-2 text-center max-w-xs';
+        guidance.innerHTML = `Look in your closet, you might be surprised what you will find!
+          <div class="w-12 h-px bg-white/70 mx-auto my-3"></div>
+          <span>Go to</span>
+          <span class="inline-flex flex-col items-center rounded-lg px-3 py-2">
+            <svg class="w-4 h-4 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+            </svg>
+            <span class="text-xs font-medium text-stone-600 mt-0.5">My Closet</span>
+          </span>
+        `;
+        questionText.parentElement.appendChild(guidance);
+      }
+      
+      // Update progress dots
+      progressDots.innerHTML = '';
+      const totalQuestions = decisionState.answers.length + 1;
+      for (let i = 0; i < totalQuestions; i++) {
+        const dot = document.createElement('div');
+        dot.className = `w-2 h-2 rounded-full ${i === totalQuestions - 1 ? 'bg-amber-500' : 'bg-stone-300'}`;
+        progressDots.appendChild(dot);
+      }
+      
+      // Reset card position
+      questionCard.style.transform = '';
+    }
+    
+    function showResult(resultKey) {
+      const result = results[resultKey];
+      questionView.classList.add('hidden');
+      resultView.classList.remove('hidden');
+      
+      const resultIcon = document.getElementById('result-icon');
+      const resultTitle = document.getElementById('result-title');
+      const resultMessage = document.getElementById('result-message');
+      const resultCard = document.getElementById('result-card');
+      
+      resultIcon.className = `w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center ${result.color}`;
+      resultIcon.querySelector('span').textContent = result.icon;
+      resultTitle.textContent = result.title;
+      resultMessage.textContent = result.message;
+      
+      // Add "Go to" text and mini Friends button if needed
+      if (result.showFriendsButton) {
+        const goToText = document.createElement('p');
+        goToText.className = 'text-stone-600 mt-4 flex items-center justify-center gap-2';
+        goToText.innerHTML = `
+          <span>Go to</span>
+          <span class="inline-flex flex-col items-center rounded-lg px-3 py-2">
+            <svg class="w-4 h-4 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+            </svg>
+            <span class="text-xs font-medium text-stone-600 mt-0.5">Friends</span>
+          </span>
+        `;
+        resultMessage.parentElement.appendChild(goToText);
+      }
+    }
+    
+    // Swipe Gesture Handling
+    let startX = 0;
+    let currentX = 0;
+    let isSwiping = false;
+    
+    questionCard.addEventListener('mousedown', startSwipe);
+    questionCard.addEventListener('touchstart', startSwipe, { passive: true });
+    
+    document.addEventListener('mousemove', moveSwipe);
+    document.addEventListener('touchmove', moveSwipe, { passive: true });
+    
+    document.addEventListener('mouseup', endSwipe);
+    document.addEventListener('touchend', endSwipe);
+    
+    function startSwipe(e) {
+      if (!decisionState.isActive) return;
+      isSwiping = true;
+      startX = e.type === 'mousedown' ? e.clientX : e.touches[0].clientX;
+      questionCard.classList.add('swiping');
+    }
+    
+    function moveSwipe(e) {
+      if (!isSwiping) return;
+      currentX = e.type === 'mousemove' ? e.clientX : e.touches[0].clientX;
+      const deltaX = currentX - startX;
+      
+      // Rotate and translate card
+      const rotation = deltaX * 0.1;
+      questionCard.style.transform = `translateX(${deltaX}px) rotate(${rotation}deg)`;
+      
+      // Show hints based on direction
+      const threshold = 30;
+      if (deltaX > threshold) {
+        yesHint.style.opacity = Math.min((deltaX - threshold) / 100, 1);
+        noHint.style.opacity = 0;
+        questionCard.style.boxShadow = `0 0 30px rgba(16, 185, 129, ${Math.min((deltaX - threshold) / 200, 0.3)})`;
+      } else if (deltaX < -threshold) {
+        noHint.style.opacity = Math.min((-deltaX - threshold) / 100, 1);
+        yesHint.style.opacity = 0;
+        questionCard.style.boxShadow = `0 0 30px rgba(244, 63, 94, ${Math.min((-deltaX - threshold) / 200, 0.3)})`;
+      } else {
+        yesHint.style.opacity = 0;
+        noHint.style.opacity = 0;
+        questionCard.style.boxShadow = '';
+      }
+    }
+    
+    function endSwipe() {
+      if (!isSwiping) return;
+      isSwiping = false;
+      questionCard.classList.remove('swiping');
+      
+      const deltaX = currentX - startX;
+      const swipeThreshold = 100;
+      
+      if (Math.abs(deltaX) > swipeThreshold) {
+        const isYes = deltaX > 0;
+        handleAnswer(isYes);
+      } else {
+        // Snap back
+        questionCard.style.transform = '';
+        questionCard.style.boxShadow = '';
+      }
+      
+      yesHint.style.opacity = 0;
+      noHint.style.opacity = 0;
+    }
+    
+    function handleAnswer(isYes) {
+      const question = questions[decisionState.currentQuestion];
+      const nextPath = isYes ? question.yesPath : question.noPath;
+      
+      decisionState.answers.push({ question: decisionState.currentQuestion, answer: isYes });
+      
+      // Animate card out
+      const exitX = isYes ? 300 : -300;
+      questionCard.style.transform = `translateX(${exitX}px) rotate(${exitX * 0.1}deg)`;
+      questionCard.style.opacity = '0';
+      
+      setTimeout(() => {
+        questionCard.style.opacity = '1';
+        questionCard.style.boxShadow = '';
+        
+        if (typeof nextPath === 'string') {
+          // End state - show outcome
+          showResult(nextPath);
+        } else {
+          // Next question
+          decisionState.currentQuestion = nextPath;
+          showQuestion(nextPath);
+        }
+      }, 200);
+    }
+    
+    // Closet Functionality
+    function renderCloset() {
+      const grid = document.getElementById('closet-grid');
+      const emptyState = document.getElementById('empty-closet');
+      
+      const categoryFilter = document.getElementById('filter-category').value;
+      const colorFilter = document.getElementById('filter-color').value;
+      const sizeFilter = document.getElementById('filter-size').value;
+      
+      let filteredItems = myCloset.filter(item => {
+        if (categoryFilter && item.category !== categoryFilter) return false;
+        if (colorFilter && item.color !== colorFilter) return false;
+        if (sizeFilter && item.size !== sizeFilter) return false;
+        return true;
+      });
+      
+      if (filteredItems.length === 0) {
+        grid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+      } else {
+        emptyState.classList.add('hidden');
+        grid.innerHTML = filteredItems.map((item, index) => `
+          <div class="closet-item bg-white rounded-2xl p-4 shadow-sm" style="animation-delay: ${index * 0.05}s">
+            <div class="aspect-square rounded-xl bg-gradient-to-br from-stone-100 to-amber-50 flex items-center justify-center text-4xl mb-3 overflow-hidden">
+              ${item.image ? `<img src="${item.image}" alt="${item.category}" class="w-full h-full object-cover">` : item.emoji}
+            </div>
+            <div class="text-sm">
+              <p class="font-medium text-stone-700 capitalize">${item.category}</p>
+              <p class="text-stone-500 text-xs capitalize">${item.color} • ${item.size.toUpperCase()}</p>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+    
+    // Filter event listeners
+    ['filter-category', 'filter-color', 'filter-size'].forEach(id => {
+      document.getElementById(id).addEventListener('change', renderCloset);
+    });
+    
+    // Add Item Modal
+    const addItemModal = document.getElementById('add-item-modal');
+    const uploadBtn = document.getElementById('upload-btn');
+    const closeAddModal = document.getElementById('close-add-modal');
+    const saveItemBtn = document.getElementById('save-item-btn');
+    const photoUploadArea = document.getElementById('photo-upload-area');
+    const photoInput = document.getElementById('photo-input');
+    let selectedImage = null;
+    let selectedEmoji = '👕';
+    
+    uploadBtn.addEventListener('click', () => {
+      addItemModal.classList.remove('hidden');
+    });
+    
+    closeAddModal.addEventListener('click', () => {
+      addItemModal.classList.add('hidden');
+      resetAddItemForm();
+    });
+    
+    photoUploadArea.addEventListener('click', () => {
+      photoInput.click();
+    });
+    
+    photoInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          selectedImage = event.target.result;
+          document.getElementById('upload-placeholder').classList.add('hidden');
+          const preview = document.getElementById('photo-preview');
+          const previewImage = document.getElementById('preview-image');
+          preview.classList.remove('hidden');
+          previewImage.src = selectedImage;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+    
+    document.getElementById('item-category').addEventListener('change', (e) => {
+      selectedEmoji = categoryEmojis[e.target.value] || '👕';
+    });
+    
+    saveItemBtn.addEventListener('click', () => {
+      const category = document.getElementById('item-category').value;
+      const color = document.getElementById('item-color').value;
+      const size = document.getElementById('item-size').value;
+      
+      if (!category || !color || !size) {
+        // Show inline error
+        saveItemBtn.textContent = 'Please fill all fields';
+        saveItemBtn.classList.add('bg-rose-500');
+        setTimeout(() => {
+          saveItemBtn.textContent = 'Add to Closet';
+          saveItemBtn.classList.remove('bg-rose-500');
+        }, 2000);
+        return;
+      }
+      
+      myCloset.push({
+        emoji: categoryEmojis[category] || '👕',
+        image: selectedImage,
+        category,
+        color,
+        size
+      });
+      
+      addItemModal.classList.add('hidden');
+      resetAddItemForm();
+      renderCloset();
+    });
+    
+    function resetAddItemForm() {
+      document.getElementById('item-category').value = '';
+      document.getElementById('item-color').value = '';
+      document.getElementById('item-size').value = '';
+      photoInput.value = '';
+      selectedImage = null;
+      document.getElementById('upload-placeholder').classList.remove('hidden');
+      document.getElementById('photo-preview').classList.add('hidden');
+    }
+    
+    // Friends Functionality
+    function renderFriends() {
+        const grid = document.getElementById('friends-grid');
+        const emptyState = document.getElementById('empty-friends');
+        const friendsCountEl = document.getElementById('friends-count');
+
+        friendsCountEl.textContent = `Friends (${friends.length})`;
+
+        const categoryFilter = document.getElementById('friend-filter-category').value;
+        const colorFilter = document.getElementById('friend-filter-color').value;
+        const sizeFilter = document.getElementById('friend-filter-size').value;
+
+        const allItems = friends.flatMap(f => f.items);
+
+        const filteredItems = allItems.filter(item => {
+            if (categoryFilter && item.category !== categoryFilter) return false;
+            if (colorFilter && item.color !== colorFilter) return false;
+            if (sizeFilter && item.size !== sizeFilter) return false;
+            return true;
+        });
+
+        if (!filteredItems.length) {
+            grid.innerHTML = '';
+            emptyState.classList.remove('hidden');
+            return;
+        }
+
+        emptyState.classList.add('hidden');
+
+        grid.innerHTML = filteredItems.map((item, index) => `
+            <div class="closet-item bg-white rounded-2xl p-4 shadow-sm" style="animation-delay:${index * 0.05}s">
+            <div class="aspect-square rounded-xl overflow-hidden bg-stone-100 mb-3">
+                <img
+                src="${item.image}"
+                alt="${item.category}"
+                class="w-full h-full object-cover"
+                loading="lazy"
+                />
+            </div>
+            <div class="text-sm">
+                <p class="font-medium text-stone-700 capitalize">${item.category}</p>
+                <p class="text-stone-500 text-xs capitalize">
+                ${item.color} • ${item.size.toUpperCase()}
+                </p>
+                <p class="text-teal-600 text-xs mt-1">From ${item.owner}</p>
+            </div>
+            </div>
+        `).join('');
+        }
+    
+    // Friend filter event listeners
+    ['friend-filter-category', 'friend-filter-color', 'friend-filter-size'].forEach(id => document.getElementById(id).addEventListener('change', renderFriends));
+
+    
+    // Friend Search Modal
+    const friendSearchModal = document.getElementById('friend-search-modal');
+    const searchFriendsBtn = document.getElementById('search-friends-btn');
+    const closeFriendModal = document.getElementById('close-friend-modal');
+    const friendSearchInput = document.getElementById('friend-search-input');
+    const friendSearchResults = document.getElementById('friend-search-results');
+    
+    const suggestedFriends = [
+      { id: 7, name: 'Sandy', username: '@Sandy01', avatar: '👩‍🦳' },
+      { id: 8, name: 'Mimi', username: '@Mimi97', avatar: '👩‍🦲' },
+      { id: 9, name: 'Zara', username: '@Zara_Thrift', avatar: '🧑' }
+    ];
+    
+    searchFriendsBtn.addEventListener('click', () => {
+      friendSearchModal.classList.remove('hidden');
+      renderSearchResults('');
+    });
+    
+    closeFriendModal.addEventListener('click', () => {
+      friendSearchModal.classList.add('hidden');
+    });
+    
+    friendSearchInput.addEventListener('input', (e) => {
+      renderSearchResults(e.target.value);
+    });
+    
+    function renderSearchResults(query) {
+      const filtered = suggestedFriends.filter(f => 
+        f.name.toLowerCase().includes(query.toLowerCase()) ||
+        f.username.toLowerCase().includes(query.toLowerCase())
+      );
+      
+      friendSearchResults.innerHTML = filtered.map(friend => `
+        <div class="flex items-center justify-between p-3 bg-stone-50 rounded-xl">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-lg">
+              ${friend.avatar}
+            </div>
+            <div>
+              <p class="font-medium text-stone-700">${friend.name}</p>
+              <p class="text-stone-400 text-sm">${friend.username}</p>
+            </div>
+          </div>
+          <button class="add-friend-btn bg-stone-800 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-stone-700 transition-colors" data-id="${friend.id}">
+            Add
+          </button>
+        </div>
+      `).join('');
+      
+      // Add click handlers for add buttons
+      document.querySelectorAll('.add-friend-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const friendId = parseInt(btn.dataset.id);
+          const friend = suggestedFriends.find(f => f.id === friendId);
+          if (friend && !friends.find(f => f.id === friendId)) {
+            friends.push({
+              ...friend,
+              items: sampleItems.slice(0, Math.floor(Math.random() * 3) + 1).map(item => ({
+                ...item,
+                owner: friend.name,
+                ownerId: friend.id
+              }))
+            });
+            btn.textContent = 'Added!';
+            btn.disabled = true;
+            btn.classList.add('bg-emerald-500');
+            renderFriends();
+          }
+        });
+      });
+    }
+    
+    // Element SDK initialization
+    async function onConfigChange(config) {
+      const tagline = document.getElementById('tagline');
+      const startBtn = document.getElementById('start-btn');
+      
+      if (tagline) tagline.textContent = config.tagline || defaultConfig.tagline;
+      if (startBtn) startBtn.textContent = config.start_button_text || defaultConfig.start_button_text;
+      
+      // Apply colors
+      document.body.style.backgroundColor = config.background_color || defaultConfig.background_color;
+      document.querySelectorAll('.bg-white').forEach(el => {
+        el.style.backgroundColor = config.surface_color || defaultConfig.surface_color;
+      });
+    }
+    
+    function mapToCapabilities(config) {
+      return {
+        recolorables: [
+          {
+            get: () => config.background_color || defaultConfig.background_color,
+            set: (value) => { config.background_color = value; window.elementSdk.setConfig({ background_color: value }); }
+          },
+          {
+            get: () => config.surface_color || defaultConfig.surface_color,
+            set: (value) => { config.surface_color = value; window.elementSdk.setConfig({ surface_color: value }); }
+          },
+          {
+            get: () => config.text_color || defaultConfig.text_color,
+            set: (value) => { config.text_color = value; window.elementSdk.setConfig({ text_color: value }); }
+          },
+          {
+            get: () => config.primary_action_color || defaultConfig.primary_action_color,
+            set: (value) => { config.primary_action_color = value; window.elementSdk.setConfig({ primary_action_color: value }); }
+          },
+          {
+            get: () => config.secondary_action_color || defaultConfig.secondary_action_color,
+            set: (value) => { config.secondary_action_color = value; window.elementSdk.setConfig({ secondary_action_color: value }); }
+          }
+        ],
+        borderables: [],
+        fontEditable: undefined,
+        fontSizeable: undefined
+      };
+    }
+    
+    function mapToEditPanelValues(config) {
+      return new Map([
+        ['app_title', config.app_title || defaultConfig.app_title],
+        ['tagline', config.tagline || defaultConfig.tagline],
+        ['start_button_text', config.start_button_text || defaultConfig.start_button_text]
+      ]);
+    }
+    
+    // Initialize
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities,
+        mapToEditPanelValues
+      });
+    }
+    
+    // Initial render
+    renderCloset();
+    renderFriends();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9bb81ffc3318fe9e',t:'MTc2ODAwNTY0Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
